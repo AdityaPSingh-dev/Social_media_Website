@@ -14,10 +14,12 @@ import { Input } from "@/components/ui/input";
 import { SignupValidation } from "@/lib/validation";
 import Loader from "@/components/ui/shared/Loader";
 import { Link } from "react-router-dom";
-import { createUserAccount } from "@/lib/appwrite/api";
+import { toast } from "sonner";
+import { useCreateUserAccount } from "@/lib/react-query/queriesAndMutations";
 
 const Signup = () => {
-  const isLoading = false;
+  const { mutateAsync: createUserAccount, isLoading: isCreatingUser } =
+    useCreateUserAccount();
   // 1. Define your form.
   const form = useForm<z.infer<typeof SignupValidation>>({
     resolver: zodResolver(SignupValidation),
@@ -34,6 +36,10 @@ const Signup = () => {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
     const newUser = await createUserAccount(values);
+    if (!newUser) {
+      return toast("Please try again");
+    }
+    //const session = await signInAccount();
   }
 
   return (
@@ -132,7 +138,7 @@ const Signup = () => {
             )}
           />
           <Button type="submit" className="bg-[#837AFF]">
-            {isLoading ? (
+            {isCreatingUser ? (
               <div className="flex gap-2">
                 <Loader /> Loading...
               </div>
