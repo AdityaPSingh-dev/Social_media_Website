@@ -13,13 +13,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { SignupValidation } from "@/lib/validation";
 import Loader from "@/components/ui/shared/Loader";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { useCreateUserAccount } from "@/lib/react-query/queriesAndMutations";
+import {
+  useCreateUserAccount,
+  useSignInAccount,
+} from "@/lib/react-query/queriesAndMutations";
+import { useUserContext } from "@/context/AuthContext";
 
 const Signup = () => {
-  const { mutateAsync: createUserAccount, isLoading: isCreatingUser } =
+  const { checkAuthUser, isLoading: isUserLoading } = useUserContext();
+  const navigate = useNavigate();
+  const { mutateAsync: createUserAccount, isPending: isCreatingAccount } =
     useCreateUserAccount();
+  const { mutateAsync: signInAccount, isPending: isSigningIn } =
+    useSignInAccount();
   // 1. Define your form.
   const form = useForm<z.infer<typeof SignupValidation>>({
     resolver: zodResolver(SignupValidation),
@@ -39,7 +47,21 @@ const Signup = () => {
     if (!newUser) {
       return toast("Please try again");
     }
-    //const session = await signInAccount();
+    const session = await signInAccount({
+      email: values.email,
+      password: values.password,
+    });
+    console.log(session);
+    if (!session) {
+      return toast("Please try again,Sign in failed");
+    }
+    const isLoggedIn = await checkAuthUser();
+    if (isLoggedIn) {
+      form.reset();
+      navigate("/");
+    } else {
+      return toast("Sign up failed. Please try again");
+    }
   }
 
   return (
@@ -129,7 +151,7 @@ const Signup = () => {
                   <Input
                     type="password"
                     className="bg-white/30 border border-white/30 rounded-md p-2 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 ease-in-out w-full"
-                    placeholder="Username"
+                    placeholder="Password"
                     {...field}
                   />
                 </FormControl>
@@ -138,7 +160,7 @@ const Signup = () => {
             )}
           />
           <Button type="submit" className="bg-[#837AFF]">
-            {isCreatingUser ? (
+            {isCreatingAccount ? (
               <div className="flex gap-2">
                 <Loader /> Loading...
               </div>
